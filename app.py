@@ -2,56 +2,57 @@ import streamlit as st
 import pandas as pd
 import time
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-import os
 
-# Konfigurasi WebDriver untuk Streamlit Cloud
+# ✅ Tentukan versi Chrome yang sesuai (Ganti dengan versi Chrome yang sesuai)
+CHROME_VERSION = "133.0.6943.142"  # Sesuaikan dengan versi Chrome di lingkungan Streamlit Cloud
+
+# ✅ Konfigurasi WebDriver
 @st.cache_resource
 def get_driver():
     options = webdriver.ChromeOptions()
-    options.binary_location = "/usr/bin/chromium-browser"  # Pakai Chromium
-    options.add_argument("--headless")  # Mode tanpa GUI
+    options.add_argument("--headless")  # Menjalankan tanpa UI browser
+    options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-dev-shm-usage")  # Mengatasi keterbatasan memori di Streamlit Cloud
 
-    # Gunakan driver dari chromium-chromedriver
-    service = Service("/usr/bin/chromedriver")  
+    # ✅ Gunakan ChromeDriver versi yang sesuai
+    return webdriver.Chrome(service=Service(ChromeDriverManager(version=CHROME_VERSION).install()), options=options)
 
-    return webdriver.Chrome(service=service, options=options)
-
-# Scraping function
+# ✅ Fungsi untuk scraping ulasan dari Google Maps
 def scrape_reviews(place_url, max_scroll=10):
     driver = get_driver()
     driver.get(place_url)
     time.sleep(5)  # Tunggu halaman loading
     
-    # Klik tombol "Lihat semua ulasan"
+    # ✅ Klik tombol "Lihat semua ulasan"
     try:
-        review_button = driver.find_element("xpath", "//button[contains(@aria-label, 'ulasan')]")
+        review_button = driver.find_element(By.XPATH, "//button[contains(@aria-label, 'ulasan')]")
         review_button.click()
         time.sleep(5)
     except:
         st.error("🚫 Tidak menemukan tombol ulasan!")
         return []
 
-    # Scroll untuk memuat lebih banyak ulasan
+    # ✅ Scroll untuk memuat lebih banyak ulasan
     try:
-        scrollable_div = driver.find_element("class name", "m6QErb.DxyBCb.kA9KIf.dS8AEf")
+        scrollable_div = driver.find_element(By.CLASS_NAME, "m6QErb.DxyBCb.kA9KIf.dS8AEf")
         for _ in range(max_scroll):
             driver.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight", scrollable_div)
             time.sleep(2)
     except:
         st.error("⚠️ Gagal melakukan scrolling!")
 
-    # Ambil data ulasan
-    reviews = driver.find_elements("class name", "jftiEf.fontBodyMedium")
+    # ✅ Ambil data ulasan
+    reviews = driver.find_elements(By.CLASS_NAME, "jftiEf.fontBodyMedium")
     review_list = []
     for review in reviews:
         try:
-            author = review.find_element("class name", "d4r55").text
-            rating = review.find_element("class name", "kvMYJc").get_attribute("aria-label")
-            text = review.find_element("class name", "wiI7pd").text
+            author = review.find_element(By.CLASS_NAME, "d4r55").text
+            rating = review.find_element(By.CLASS_NAME, "kvMYJc").get_attribute("aria-label")
+            text = review.find_element(By.CLASS_NAME, "wiI7pd").text
             review_list.append({"Nama": author, "Rating": rating, "Ulasan": text})
         except:
             continue
@@ -59,7 +60,7 @@ def scrape_reviews(place_url, max_scroll=10):
     driver.quit()
     return review_list
 
-# UI Streamlit
+# ✅ UI Streamlit
 st.set_page_config(page_title="Google Maps Review Scraper", page_icon="🌍")
 
 st.title("🌍 Google Maps Review Scraper")
@@ -75,11 +76,11 @@ if st.button("Scrape Ulasan"):
                 df = pd.DataFrame(results)
                 st.success(f"✅ Berhasil mengambil {len(df)} ulasan!")
 
-                # Tampilkan hasil
+                # ✅ Tampilkan hasil
                 st.subheader("📌 Hasil Ulasan")
                 st.dataframe(df)
 
-                # Unduh sebagai CSV
+                # ✅ Unduh sebagai CSV
                 csv = df.to_csv(index=False).encode('utf-8')
                 st.download_button(
                     label="⬇️ Unduh CSV",
@@ -93,4 +94,4 @@ if st.button("Scrape Ulasan"):
         st.warning("⚠️ Harap masukkan URL Google Maps!")
 
 st.markdown("---")
-st.write("Dibuat oleh **Abizar Egi** 🚀")
+st.write("Dibuat oleh **Abizar Egi**")
