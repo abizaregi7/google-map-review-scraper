@@ -6,22 +6,19 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
-# ✅ Tentukan versi Chrome yang sesuai (Ganti dengan versi Chrome yang sesuai)
-CHROME_VERSION = "133.0.6943.142"  # Sesuaikan dengan versi Chrome di lingkungan Streamlit Cloud
-
-# ✅ Konfigurasi WebDriver
+# ✅ Konfigurasi WebDriver (Tanpa menentukan versi Chrome)
 @st.cache_resource
 def get_driver():
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")  # Menjalankan tanpa UI browser
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")  # Mengatasi keterbatasan memori di Streamlit Cloud
+    options.add_argument("--disable-dev-shm-usage")  # Untuk menghindari error memori di Streamlit Cloud
 
-    # ✅ Gunakan ChromeDriver versi yang sesuai
-    return webdriver.Chrome(service=Service(ChromeDriverManager(version=CHROME_VERSION).install()), options=options)
+    # ✅ Gunakan WebDriverManager tanpa menentukan versi
+    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
-# ✅ Fungsi untuk scraping ulasan dari Google Maps
+# ✅ Fungsi untuk scraping ulasan Google Maps
 def scrape_reviews(place_url, max_scroll=10):
     driver = get_driver()
     driver.get(place_url)
