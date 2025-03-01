@@ -10,13 +10,13 @@ from webdriver_manager.chrome import ChromeDriverManager
 @st.cache_resource
 def get_driver():
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless")  # Menjalankan tanpa UI browser
+    options.binary_location = "/usr/bin/chromium-browser"  # Menentukan lokasi Chrome
+    options.add_argument("--headless")  
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")  # Untuk menghindari error memori di Streamlit Cloud
+    options.add_argument("--disable-dev-shm-usage")  
 
-    # ✅ Gunakan WebDriverManager tanpa menentukan versi
-    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    return webdriver.Chrome(options=options)
 
 # ✅ Fungsi untuk scraping ulasan Google Maps
 def scrape_reviews(place_url, max_scroll=10):
