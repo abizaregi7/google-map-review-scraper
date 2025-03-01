@@ -2,65 +2,60 @@ import streamlit as st
 import pandas as pd
 import time
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+import os
 
-# Konfigurasi WebDriver
+# Konfigurasi WebDriver untuk Streamlit Cloud
 @st.cache_resource
 def get_driver():
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless")  # Mode tanpa tampilan
-    options.add_argument("--disable-gpu")
+    options.binary_location = "/usr/bin/chromium-browser"  # Pakai Chromium
+    options.add_argument("--headless")  # Mode tanpa GUI
     options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")  # Mencegah crash di lingkungan Docker
-    
-    try:
-        return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-    except Exception as e:
-        st.error(f"❌ Gagal memulai WebDriver: {e}")
-        return None
+    options.add_argument("--disable-dev-shm-usage")
+
+    # Gunakan driver dari chromium-chromedriver
+    service = Service("/usr/bin/chromedriver")  
+
+    return webdriver.Chrome(service=service, options=options)
 
 # Scraping function
-def scrape_reviews(place_url, max_scroll=5):
+def scrape_reviews(place_url, max_scroll=10):
     driver = get_driver()
-    if not driver:
-        return []
-    
     driver.get(place_url)
     time.sleep(5)  # Tunggu halaman loading
     
     # Klik tombol "Lihat semua ulasan"
     try:
-        review_button = driver.find_element(By.XPATH, "//button[contains(@aria-label, 'ulasan')]")
-        driver.execute_script("arguments[0].click();", review_button)
+        review_button = driver.find_element("xpath", "//button[contains(@aria-label, 'ulasan')]")
+        review_button.click()
         time.sleep(5)
-    except Exception as e:
-        st.error(f"🚫 Tidak menemukan tombol ulasan! Error: {e}")
-        driver.quit()
+    except:
+        st.error("🚫 Tidak menemukan tombol ulasan!")
         return []
-    
+
     # Scroll untuk memuat lebih banyak ulasan
     try:
-        scrollable_div = driver.find_element(By.CLASS_NAME, "m6QErb.DxyBCb.kA9KIf.dS8AEf")
+        scrollable_div = driver.find_element("class name", "m6QErb.DxyBCb.kA9KIf.dS8AEf")
         for _ in range(max_scroll):
             driver.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight", scrollable_div)
             time.sleep(2)
-    except Exception as e:
-        st.warning(f"⚠️ Gagal melakukan scrolling! Error: {e}")
-    
+    except:
+        st.error("⚠️ Gagal melakukan scrolling!")
+
     # Ambil data ulasan
-    reviews = driver.find_elements(By.CLASS_NAME, "jftiEf.fontBodyMedium")
+    reviews = driver.find_elements("class name", "jftiEf.fontBodyMedium")
     review_list = []
     for review in reviews:
         try:
-            author = review.find_element(By.CLASS_NAME, "d4r55").text
-            rating = review.find_element(By.CLASS_NAME, "kvMYJc").get_attribute("aria-label")
-            text = review.find_element(By.CLASS_NAME, "wiI7pd").text
+            author = review.find_element("class name", "d4r55").text
+            rating = review.find_element("class name", "kvMYJc").get_attribute("aria-label")
+            text = review.find_element("class name", "wiI7pd").text
             review_list.append({"Nama": author, "Rating": rating, "Ulasan": text})
         except:
             continue
-    
+
     driver.quit()
     return review_list
 
@@ -98,4 +93,4 @@ if st.button("Scrape Ulasan"):
         st.warning("⚠️ Harap masukkan URL Google Maps!")
 
 st.markdown("---")
-st.write("Dibuat oleh **Abizar Egi**")
+st.write("Dibuat oleh **Abizar Egi** 🚀")
